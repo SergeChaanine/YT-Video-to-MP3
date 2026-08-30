@@ -7,6 +7,7 @@ from pathlib import Path
 
 from yt_to_mp3.services.audio import AudioProcessingError
 from yt_to_mp3.services.downloader import DownloadService
+from yt_to_mp3.services.javascript import JavaScriptRuntimeError
 from yt_to_mp3.ui.main_window import MainWindow
 
 
@@ -26,7 +27,7 @@ def _self_test() -> int:
     try:
         DownloadService().check_dependencies()
         return 0
-    except AudioProcessingError:
+    except (AudioProcessingError, JavaScriptRuntimeError):
         return 1
 
 

@@ -1,5 +1,6 @@
 param(
     [string]$FfmpegDirectory = "",
+    [string]$DenoPath = "",
     [switch]$SkipInstaller
 )
 
@@ -8,6 +9,7 @@ $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $venvDirectory = Join-Path $repositoryRoot ".venv"
 $venvPython = Join-Path $venvDirectory "Scripts\python.exe"
 $vendorDirectory = Join-Path $repositoryRoot "vendor\ffmpeg"
+$vendorDenoPath = Join-Path $repositoryRoot "vendor\deno\deno.exe"
 
 if (-not (Test-Path -LiteralPath $venvPython)) {
     python -m venv $venvDirectory
@@ -28,6 +30,21 @@ else {
 }
 if (-not (Test-Path -LiteralPath $ffmpeg) -or -not (Test-Path -LiteralPath $ffprobe)) {
     throw "Place ffmpeg.exe and ffprobe.exe in vendor\ffmpeg or use -FfmpegDirectory."
+}
+
+if ($DenoPath) {
+    $resolvedDenoPath = (Resolve-Path -LiteralPath $DenoPath).Path
+    if ((Get-Item -LiteralPath $resolvedDenoPath).PSIsContainer) {
+        $resolvedDenoPath = Join-Path $resolvedDenoPath "deno.exe"
+    }
+    $env:YT_TO_MP3_DENO_PATH = $resolvedDenoPath
+    $deno = $resolvedDenoPath
+}
+else {
+    $deno = $vendorDenoPath
+}
+if (-not (Test-Path -LiteralPath $deno -PathType Leaf)) {
+    throw "Place deno.exe in vendor\deno or use -DenoPath."
 }
 
 Push-Location $repositoryRoot

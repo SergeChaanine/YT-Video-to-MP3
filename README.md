@@ -21,6 +21,7 @@ applicable platform terms and local laws.
 
 - Python 3.11 or newer
 - FFmpeg and FFprobe with `libmp3lame`
+- Deno 2.3 or newer for YouTube's JavaScript challenges
 
 The application finds FFmpeg in this order:
 
@@ -28,6 +29,9 @@ The application finds FFmpeg in this order:
 2. The bundled `ffmpeg` directory
 3. `vendor/ffmpeg` in a development checkout
 4. The system `PATH`
+
+Set `YT_TO_MP3_DENO_PATH` to a Deno executable or its directory during development. Release builds
+bundle Deno and the matching `yt-dlp-ejs` solver, so users do not need to install either tool.
 
 Install the Python project and development tools:
 
@@ -71,11 +75,13 @@ Windows-invalid filename characters are replaced, while Unicode letters and acce
 
 ## Building the Windows application
 
-Place redistributable `ffmpeg.exe` and `ffprobe.exe` files in `vendor/ffmpeg`, or pass their directory
-to the build script:
+Place redistributable `ffmpeg.exe` and `ffprobe.exe` files in `vendor/ffmpeg` and `deno.exe` in
+`vendor/deno`, or pass their locations to the build script:
 
 ```powershell
-.\scripts\build.ps1 -FfmpegDirectory C:\path\to\ffmpeg\bin
+.\scripts\build.ps1 `
+    -FfmpegDirectory C:\path\to\ffmpeg\bin `
+    -DenoPath C:\path\to\deno.exe
 ```
 
 The script runs tests and lint checks, creates a PyInstaller one-folder application, and uses Inno

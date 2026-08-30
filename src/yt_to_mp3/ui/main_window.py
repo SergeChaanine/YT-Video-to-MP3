@@ -18,6 +18,7 @@ from yt_to_mp3.models import AppEvent, ItemStatus, NormalizationSettings, QueueI
 from yt_to_mp3.services.audio import AudioProcessingError
 from yt_to_mp3.services.downloader import DownloadCancelled, DownloadService
 from yt_to_mp3.services.filenames import available_output_path, build_filename
+from yt_to_mp3.services.javascript import JavaScriptRuntimeError
 from yt_to_mp3.ui.styles import apply_theme
 
 YOUTUBE_URL_PATTERN = re.compile(
@@ -72,7 +73,7 @@ class MainWindow(tk.Tk):
         self.overall_progress_var = tk.DoubleVar(value=0.0)
         self.current_status_var = tk.StringVar(value="Ready")
         self.overall_status_var = tk.StringVar(value="No downloads started")
-        self.dependency_status_var = tk.StringVar(value="Checking FFmpeg…")
+        self.dependency_status_var = tk.StringVar(value="Checking download tools…")
 
     def _build_ui(self) -> None:
         self.columnconfigure(0, weight=1)
@@ -408,8 +409,8 @@ class MainWindow(tk.Tk):
             return
         try:
             self.service.check_dependencies()
-        except AudioProcessingError as error:
-            messagebox.showerror("FFmpeg is required", str(error), parent=self)
+        except (AudioProcessingError, JavaScriptRuntimeError) as error:
+            messagebox.showerror("Download tool unavailable", str(error), parent=self)
             return
 
         output_directory = Path(self.output_directory_var.get()).expanduser()
@@ -602,10 +603,10 @@ class MainWindow(tk.Tk):
         if event.kind == "log":
             self._append_log(str(event.data.get("message", "")))
         elif event.kind == "dependency_ready":
-            self.dependency_status_var.set("FFmpeg ready")
+            self.dependency_status_var.set("Download tools ready")
         elif event.kind == "dependency_failed":
-            self.dependency_status_var.set("FFmpeg not found")
-            self._append_log(str(event.data.get("error", "FFmpeg is unavailable.")))
+            self.dependency_status_var.set("Download tool unavailable")
+            self._append_log(str(event.data.get("error", "A required tool is unavailable.")))
         elif event.kind == "metadata_ready" and item:
             tracks = event.data.get("tracks") or []
             if tracks:
@@ -709,7 +710,7 @@ class MainWindow(tk.Tk):
             try:
                 self.service.check_dependencies()
                 self.events.put(AppEvent("dependency_ready"))
-            except AudioProcessingError as error:
+            except (AudioProcessingError, JavaScriptRuntimeError) as error:
                 self.events.put(AppEvent("dependency_failed", data={"error": str(error)}))
 
         threading.Thread(target=worker, daemon=True, name="dependency-check").start()

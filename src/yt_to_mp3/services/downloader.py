@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 import threading
 from collections.abc import Callable
@@ -22,6 +23,11 @@ from yt_to_mp3.services.audio import (
     probe_media,
     verify_media_binary,
 )
+from yt_to_mp3.services.javascript import (
+    find_deno_runtime,
+    javascript_options,
+    verify_ejs_package,
+)
 from yt_to_mp3.services.metadata import metadata_from_info
 
 ProgressCallback = Callable[[float, str], None]
@@ -38,6 +44,7 @@ AUDIO_EXTENSIONS = {
     ".webm",
 }
 IMAGE_EXTENSIONS = {".avif", ".jpeg", ".jpg", ".png", ".webp"}
+ANSI_ESCAPE_PATTERN = re.compile(r"\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
 class DownloadError(RuntimeError):
@@ -58,23 +65,30 @@ class _Logger:
 
     def warning(self, message: str) -> None:
         if self.callback:
-            self.callback(f"Warning: {message}")
+            self.callback(f"Warning: {_strip_terminal_codes(message)}")
 
     def error(self, message: str) -> None:
         if self.callback:
-            self.callback(f"Error: {message}")
+            self.callback(f"Error: {_strip_terminal_codes(message)}")
 
 
 class DownloadService:
     def __init__(self, log_callback: LogCallback | None = None) -> None:
         self.log_callback = log_callback
 
-    def check_dependencies(self) -> tuple[Path, Path]:
+    def check_dependencies(self) -> tuple[Path, Path, Path]:
         ffmpeg = find_media_binary("ffmpeg")
         ffprobe = find_media_binary("ffprobe")
         verify_media_binary(ffmpeg)
         verify_media_binary(ffprobe)
-        return ffmpeg, ffprobe
+        deno = find_deno_runtime()
+        verify_ejs_package()
+        return ffmpeg, ffprobe, deno
+
+    def _youtube_options(self, deno: Path | None = None) -> dict[str, Any]:
+        runtime = deno or find_deno_runtime()
+        verify_ejs_package()
+        return javascript_options(runtime)
 
     def fetch_metadata(self, url: str, allow_playlists: bool = False) -> list[TrackMetadata]:
         options: dict[str, Any] = {
@@ -84,6 +98,7 @@ class DownloadService:
             "noplaylist": not allow_playlists,
             "logger": _Logger(self.log_callback),
         }
+        options.update(self._youtube_options())
         try:
             with yt_dlp.YoutubeDL(options) as ydl:
                 info = ydl.extract_info(url, download=False)
@@ -120,7 +135,7 @@ class DownloadService:
         if destination.exists() and not overwrite:
             raise DownloadError(f"A file named '{destination.name}' already exists.")
         destination.parent.mkdir(parents=True, exist_ok=True)
-        ffmpeg, ffprobe = self.check_dependencies()
+        ffmpeg, ffprobe, deno = self.check_dependencies()
 
         with tempfile.TemporaryDirectory(prefix="yt_to_mp3_") as temporary_directory:
             workspace = Path(temporary_directory)
@@ -129,6 +144,7 @@ class DownloadService:
                 workspace,
                 cancel_event,
                 progress_callback,
+                deno,
             )
             if cancel_event.is_set():
                 raise DownloadCancelled("Download cancelled.")
@@ -202,6 +218,7 @@ class DownloadService:
         workspace: Path,
         cancel_event: threading.Event,
         progress_callback: ProgressCallback | None,
+        deno: Path,
     ) -> Path:
         def hook(status: dict[str, Any]) -> None:
             if cancel_event.is_set():
@@ -230,6 +247,7 @@ class DownloadService:
             "progress_hooks": [hook],
             "logger": _Logger(self.log_callback),
         }
+        options.update(self._youtube_options(deno))
         try:
             with yt_dlp.YoutubeDL(options) as ydl:
                 info = ydl.extract_info(url, download=True)
@@ -298,9 +316,14 @@ def _find_thumbnail(workspace: Path, source: Path) -> Path | None:
 
 
 def _clean_yt_dlp_error(message: str) -> str:
+    message = _strip_terminal_codes(message)
     lines = [line.strip() for line in message.splitlines() if line.strip()]
     cleaned = lines[-1] if lines else "yt-dlp could not process this URL."
     return cleaned.removeprefix("ERROR: ")
+
+
+def _strip_terminal_codes(message: str) -> str:
+    return ANSI_ESCAPE_PATTERN.sub("", message)
 
 
 def _report(callback: ProgressCallback | None, fraction: float, message: str) -> None:

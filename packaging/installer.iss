@@ -1,5 +1,5 @@
 #define MyAppName "YT to MP3 Converter"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.0.1"
 #define MyAppPublisher "Serge Chaanine"
 #define MyAppExeName "YT to MP3 Converter.exe"
 #ifndef RepositoryRoot
