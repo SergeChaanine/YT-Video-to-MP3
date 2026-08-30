@@ -16,6 +16,10 @@ build/
 dist/
 *.egg-info/
 *.exe
+vendor/ffmpeg/*
+!vendor/ffmpeg/.gitkeep
+vendor/deno/*
+!vendor/deno/.gitkeep
 
 # Local/editor files
 .env
