@@ -17,7 +17,34 @@ maximum-quality MP3 named `Singer - Music name.mp3`.
 Use the application only for content you have permission to download and in accordance with the
 applicable platform terms and local laws.
 
-## Requirements for development
+## Download and install
+
+[Download YT to MP3 Converter 2.0.2 for Windows](https://github.com/SergeChaanine/YT-Video-to-MP3/releases/download/v2.0.2/YT-to-MP3-Converter-Setup-2.0.2.exe)
+
+1. Download `YT-to-MP3-Converter-Setup-2.0.2.exe`.
+2. Open the installer and follow the setup wizard.
+3. If Windows SmartScreen appears, select **More info**, verify that the file came from this
+   repository, and then select **Run anyway**.
+
+The Windows installer includes the application, FFmpeg, FFprobe, Deno, and the YouTube JavaScript
+solver. Python and the supporting tools do not need to be installed separately. The installer is
+currently unsigned, so Windows may display the SmartScreen notice.
+
+Published installer SHA-256:
+
+```text
+122A93DEF535D96AE9DE9C17EF4FD15A12582F0D1FA80DB4234C6DE40712CFEC
+```
+
+You can verify it from PowerShell after downloading:
+
+```powershell
+Get-FileHash .\YT-to-MP3-Converter-Setup-2.0.2.exe -Algorithm SHA256
+```
+
+## Run from source
+
+### Requirements
 
 - Python 3.11 or newer
 - FFmpeg and FFprobe with `libmp3lame`
