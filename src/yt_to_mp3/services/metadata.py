@@ -15,14 +15,6 @@ def _first_text(info: Mapping[str, Any], *keys: str) -> str:
     return ""
 
 
-def _release_year(info: Mapping[str, Any]) -> str | None:
-    year = info.get("release_year")
-    if year:
-        return str(year)
-    date = _first_text(info, "release_date", "upload_date")
-    return date[:4] if len(date) >= 4 and date[:4].isdigit() else None
-
-
 def metadata_from_info(info: Mapping[str, Any], original_url: str) -> TrackMetadata:
     raw_title = _first_text(info, "title", "fulltitle") or "Unknown title"
     artist = _first_text(info, "artist")
@@ -50,8 +42,5 @@ def metadata_from_info(info: Mapping[str, Any], original_url: str) -> TrackMetad
         title=clean_song_title(track),
         video_id=str(info.get("id") or ""),
         duration=float(duration) if isinstance(duration, (int, float)) else None,
-        thumbnail_url=_first_text(info, "thumbnail") or None,
-        album=_first_text(info, "album") or None,
-        release_year=_release_year(info),
         needs_review=needs_review,
     )

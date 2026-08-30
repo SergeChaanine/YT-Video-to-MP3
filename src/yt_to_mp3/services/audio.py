@@ -21,6 +21,14 @@ from yt_to_mp3.models import (
 ProgressCallback = Callable[[float, str], None]
 LOUDNORM_JSON_PATTERN = re.compile(r'\{\s*"input_i".*?\}', re.DOTALL)
 MAXIMUM_MP3_BITRATE = "320k"
+NO_MP3_METADATA_OPTIONS = (
+    "-map_metadata",
+    "-1",
+    "-id3v2_version",
+    "0",
+    "-write_id3v1",
+    "0",
+)
 
 
 class AudioProcessingError(RuntimeError):
@@ -258,6 +266,7 @@ def encode_mp3(
         "-map",
         "0:a:0",
         "-vn",
+        *NO_MP3_METADATA_OPTIONS,
     ]
     if measurement and plan and plan.should_normalize:
         command.extend(
@@ -269,8 +278,6 @@ def encode_mp3(
             "libmp3lame",
             "-b:a",
             MAXIMUM_MP3_BITRATE,
-            "-id3v2_version",
-            "3",
             "-progress",
             "pipe:1",
             "-nostats",
@@ -320,34 +327,3 @@ def encode_mp3(
         raise AudioProcessingError(details or "FFmpeg could not create the MP3 file.")
     if progress_callback:
         progress_callback(1.0, "MP3 conversion complete")
-
-
-def convert_cover_to_jpeg(
-    source: Path,
-    destination: Path,
-    ffmpeg_path: Path | None = None,
-) -> Path | None:
-    ffmpeg = ffmpeg_path or find_media_binary("ffmpeg")
-    command = [
-        str(ffmpeg),
-        "-hide_banner",
-        "-nostdin",
-        "-loglevel",
-        "error",
-        "-y",
-        "-i",
-        str(source),
-        "-frames:v",
-        "1",
-        str(destination),
-    ]
-    result = subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        creationflags=_creation_flags(),
-        check=False,
-    )
-    return destination if result.returncode == 0 and destination.is_file() else None

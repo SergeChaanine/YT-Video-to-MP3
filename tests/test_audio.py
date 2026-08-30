@@ -1,5 +1,9 @@
 from yt_to_mp3.models import LoudnessMeasurement, NormalizationSettings
-from yt_to_mp3.services.audio import MAXIMUM_MP3_BITRATE, create_normalization_plan
+from yt_to_mp3.services.audio import (
+    MAXIMUM_MP3_BITRATE,
+    NO_MP3_METADATA_OPTIONS,
+    create_normalization_plan,
+)
 
 
 def measurement(integrated: float, peak: float) -> LoudnessMeasurement:
@@ -55,3 +59,14 @@ def test_disabled_normalization_never_changes_audio() -> None:
 
 def test_mp3_output_uses_maximum_standard_bitrate() -> None:
     assert MAXIMUM_MP3_BITRATE == "320k"
+
+
+def test_mp3_output_disables_all_embedded_metadata() -> None:
+    assert NO_MP3_METADATA_OPTIONS == (
+        "-map_metadata",
+        "-1",
+        "-id3v2_version",
+        "0",
+        "-write_id3v1",
+        "0",
+    )

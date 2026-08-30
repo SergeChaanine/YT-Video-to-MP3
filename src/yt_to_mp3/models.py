@@ -14,7 +14,7 @@ class ItemStatus(StrEnum):
     DOWNLOADING = "Downloading"
     ANALYZING = "Analyzing loudness"
     CONVERTING = "Converting"
-    TAGGING = "Adding metadata"
+    FINALIZING = "Finalizing MP3"
     COMPLETED = "Completed"
     FAILED = "Failed"
     CANCELLED = "Cancelled"
@@ -27,9 +27,6 @@ class TrackMetadata:
     title: str
     video_id: str = ""
     duration: float | None = None
-    thumbnail_url: str | None = None
-    album: str | None = None
-    release_year: str | None = None
     needs_review: bool = False
 
 

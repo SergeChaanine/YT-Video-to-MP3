@@ -562,7 +562,7 @@ class MainWindow(tk.Tk):
                 ItemStatus.DOWNLOADING,
                 ItemStatus.ANALYZING,
                 ItemStatus.CONVERTING,
-                ItemStatus.TAGGING,
+                ItemStatus.FINALIZING,
             }:
                 continue
             self._remove_item(item_id)
@@ -815,4 +815,4 @@ def _status_for_progress(fraction: float) -> ItemStatus:
         return ItemStatus.ANALYZING
     if fraction < 0.96:
         return ItemStatus.CONVERTING
-    return ItemStatus.TAGGING
+    return ItemStatus.FINALIZING

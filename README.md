@@ -9,8 +9,8 @@ maximum-quality MP3 named `Singer - Music name.mp3`.
 - Encodes once with LAME at 320 kbps, the maximum standard MP3 bitrate.
 - Measures loudness before encoding and raises only quiet tracks.
 - Uses a balanced −16 LUFS target, a −1 dBTP peak ceiling, and a limit on compression.
-- Detects artist and song metadata and lets you correct the filename before downloading.
-- Embeds artist, title, album, year, source URL, and available cover art.
+- Detects artist and song naming and lets you correct the filename before downloading.
+- Leaves embedded MP3 metadata empty and does not download or embed cover artwork.
 - Supports multiple URLs, YouTube Music, Shorts, optional playlists, and clipboard detection.
 - Provides live progress, cancellation, retries, light/dark themes, and remembered settings.
 

@@ -9,14 +9,12 @@ from pathlib import Path
 from typing import Any
 
 import yt_dlp
-from mutagen.id3 import APIC, ID3, TALB, TDRC, TIT2, TPE1, WOAS, ID3NoHeaderError
 
 from yt_to_mp3.models import NormalizationSettings, TrackMetadata
 from yt_to_mp3.services.audio import (
     AudioProcessingError,
     ProcessingCancelled,
     analyze_loudness,
-    convert_cover_to_jpeg,
     create_normalization_plan,
     encode_mp3,
     find_media_binary,
@@ -43,7 +41,6 @@ AUDIO_EXTENSIONS = {
     ".wav",
     ".webm",
 }
-IMAGE_EXTENSIONS = {".avif", ".jpeg", ".jpg", ".png", ".webp"}
 ANSI_ESCAPE_PATTERN = re.compile(r"\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
@@ -197,12 +194,7 @@ class DownloadService:
 
             if cancel_event.is_set():
                 raise DownloadCancelled("Download cancelled.")
-            _report(progress_callback, 0.96, "Adding artist, title, and cover art")
-            thumbnail = _find_thumbnail(workspace, source)
-            cover = None
-            if thumbnail:
-                cover = convert_cover_to_jpeg(thumbnail, workspace / "cover.jpg", ffmpeg)
-            _write_id3_tags(encoded_file, metadata, cover)
+            _report(progress_callback, 0.96, "Finalizing MP3")
 
             if destination.exists() and not overwrite:
                 raise DownloadError(
@@ -243,7 +235,6 @@ class DownloadService:
             "noplaylist": True,
             "overwrites": True,
             "continuedl": True,
-            "writethumbnail": True,
             "progress_hooks": [hook],
             "logger": _Logger(self.log_callback),
         }
@@ -272,47 +263,6 @@ class DownloadService:
                 "yt-dlp finished, but the downloaded audio file could not be found."
             )
         return max(set(candidates), key=lambda path: path.stat().st_size)
-
-
-def _write_id3_tags(mp3_path: Path, metadata: TrackMetadata, cover_path: Path | None) -> None:
-    try:
-        tags = ID3(mp3_path)
-    except ID3NoHeaderError:
-        tags = ID3()
-    tags.delall("TIT2")
-    tags.delall("TPE1")
-    tags.add(TIT2(encoding=3, text=metadata.title))
-    tags.add(TPE1(encoding=3, text=metadata.artist))
-    if metadata.album:
-        tags.delall("TALB")
-        tags.add(TALB(encoding=3, text=metadata.album))
-    if metadata.release_year:
-        tags.delall("TDRC")
-        tags.add(TDRC(encoding=3, text=metadata.release_year))
-    if metadata.url:
-        tags.delall("WOAS")
-        tags.add(WOAS(url=metadata.url))
-    if cover_path and cover_path.is_file():
-        tags.delall("APIC")
-        tags.add(
-            APIC(
-                encoding=3,
-                mime="image/jpeg",
-                type=3,
-                desc="Cover",
-                data=cover_path.read_bytes(),
-            )
-        )
-    tags.save(mp3_path, v2_version=3)
-
-
-def _find_thumbnail(workspace: Path, source: Path) -> Path | None:
-    thumbnails = [
-        path
-        for path in workspace.iterdir()
-        if path.is_file() and path != source and path.suffix.lower() in IMAGE_EXTENSIONS
-    ]
-    return max(thumbnails, key=lambda path: path.stat().st_size) if thumbnails else None
 
 
 def _clean_yt_dlp_error(message: str) -> str:
